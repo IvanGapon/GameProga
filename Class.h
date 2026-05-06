@@ -5,7 +5,6 @@
 using namespace std;
 
 class Hero {
-
 private:
 	string hero_name;
 	string hero_ability;
@@ -24,7 +23,7 @@ public:
     Hero(float start_x, float start_y) {
         hero_name = "Player";
         hero_ability = "";
-        hero_speed = 2000;     
+        hero_speed = 200;     
         hero_damage = 10;
         hp = 100;
         max_hp = 100;
@@ -59,64 +58,62 @@ public:
     void setSpeed(int spd) { hero_speed = spd; }
 
 };
-
-
-
-
-
 class Enemy {
-
 private:
 	string enemy_name;
-	string enemy_debaf;
-	int enemy_height;
-	int enemy_weight;
-	int enemy_speed;
+
+    int hp ;
+    int max_hp ;
+
+    float pos_x , pos_y ;
+
+	int enemy_spead;
 	int enemy_damage;
 
 public:
-	Enemy() {
-		 enemy_name = "";
-		 enemy_debaf="";
-		 enemy_height=-1;
-		 enemy_weight=-1;
-		 enemy_speed=-1;
-		 enemy_damage=-1;
-	}
-	Enemy(string enemy_name, string enemy_debaf, int enemy_height,int enemy_weight,int enemy_speed, int enemy_damage) {
-		this->enemy_name = enemy_name;
-		this->enemy_debaf = enemy_debaf;
-		this->enemy_height = enemy_height;
-		this->enemy_weight = enemy_weight;
-		this->enemy_speed = enemy_speed;
-		this->enemy_damage = enemy_damage;
-	}
+    Enemy(float start_x, float start_y) {
+        enemy_name = "Enemy";
+        enemy_spead = 100;     
+        enemy_damage = 10;
+        hp = 50;
+        max_hp = 50;
+        pos_x = start_x;
+        pos_y = start_y;
+    }
 
+    void set_pos ( float st_x , float st_y){
+        pos_x = st_x; 
+        pos_y = st_y ; 
+    }
 
-	string Get_enemy_name() const { return enemy_name; }
-	int Get_enemy_height() const { return enemy_height; }
-	int Get_enemy_weight() const { return enemy_weight; }
-	string Get_enemy_debaf() const { return enemy_debaf; }
-	int Get_enemy_speed() const { return enemy_speed; }
-	int Get_enemy_damage() const { return enemy_damage; }
+    void take_damage ( int damage ){
+        hp -= damage ; 
+        if ( hp < 0 ){
+            hp = 0 ; 
+        }
+    }
+	// ну короче какая то идея += я на просторах инета видел что там через теорему пифагора просто в тик он делает 
+	// шаг по кротчайшему расстоянию типо на тебя за условную dt п р впемени 
+	void trace ( float finish_x , float finish_y ){
 
-
-
-	void Set_enemy_name(string enemy_name) { this->enemy_name = enemy_name; }
-	void Set_enemy_height(int enemy_height) { this->enemy_height = enemy_height; }
-	void Set_enemy_weight(int enemy_weight) { this->enemy_weight = enemy_weight; }
-	void Set_enemy_debaf(string enemy_debaf) { this->enemy_debaf = enemy_debaf; }
-	void Set_enemy_speed(int enemy_speed) { this->enemy_speed = enemy_speed; }
-	void Set_enemy_damage(int enemy_damage) { this->enemy_damage = enemy_damage; }
-
-
-	void Print() {
-
-		cout << enemy_name << enemy_debaf << enemy_height << enemy_weight << enemy_speed << enemy_damage << endl;
 	}
 
+    float getX() const { return pos_x; }
+    float getY() const { return pos_y; }
+    int getHP() const { return hp; }
+    int getMaxHP() const { return max_hp; }
+    int getSpeed() const { return enemy_spead; }
+    int getDamage() const { return enemy_damage; }
+    
+    void setDamage(int dmg) { enemy_damage = dmg; }
+    void setSpeed(int spd) { enemy_spead = spd; }
 
 };
+
+
+
+
+
 
 
 class Gun {
