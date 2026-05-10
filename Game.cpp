@@ -1,4 +1,6 @@
 #include <SFML/Graphics.hpp>
+#include <cstdlib>  
+#include <ctime>  
 #include <iostream>
 #include "Class.h"
 
@@ -36,7 +38,7 @@ private:
     bool waverun = false  ;
     int numWave = 0  ; 
     int wasspawn  = 0 ;
-    //  времена для волн 
+    //  времена для волн всякие разные 
     float waveTimer = 0.0f;
     float waveDelay = 5.0f;
     float spawnTimer = 0.0f;
@@ -73,6 +75,7 @@ private:
   } 
 
     void SpawnEnemies ( int type){
+        // тут задается рандомная координата для спавна гадины ползучей 
         float x = (float)(rand() % WINDOW_WIDTH ) ;
         float y = (float)(rand() % WINDOW_HEIGHT) ;
 
@@ -142,13 +145,13 @@ private:
         }
     }
 
-    void startNextWave() {
+    void startNextWave() { // ну вот войд функция перезагрузки волны по сути 
         numWave++;
         wasspawn = 0;
         spawnTimer = 0.0f;
         waverun = true;
 
-        if ( numWave > 5 ){
+        if ( numWave > 5 ){// тут ограничение на волны если надо можно править тут 
             waverun = false; 
             return;
         }
@@ -164,16 +167,18 @@ public:
 
         srand(time(nullptr)); // для рандомности и всякости со спавном 
 
+        // тут запускаем отрисовки 
         initWindow();
         initGameField();
         initHeroView();
         initHPLine();
-
+        // сразу по началу игры создаем волну 
         startNextWave();
     }
     
     // я вот если честно ваще хз зачем это, но пишут так надо 
     ~Game() {
+        // ну тут думаю все понятно 
         for (auto e : enemies) 
             delete e;
         enemies.clear();
@@ -219,9 +224,10 @@ public:
 
     //--- ВРАЖИНЫ 
     if (waverun) {
+        // короче 5 волн, вражины на волне по формуле где енеми ин вейв 
         spawnTimer += dt;
         int eneminwave = 3 + 2 * numWave ;
-        if (spawnTimer >= spawnInterval && wasspawn < eneminwave) {
+        if (spawnTimer >= spawnInterval && wasspawn < eneminwave) { // проверяем временной интервал и что не набили максимум 
             int type;
             if (numWave == 5) {
                 type = 4;  
@@ -233,6 +239,7 @@ public:
             SpawnEnemies(type);
             wasspawn++;
             spawnTimer = 0.0f;
+            // ну вот сверху зарандомили и увеличили счетчики 
         }
     
         if (wasspawn >= eneminwave && enemies.empty()) {
@@ -241,7 +248,8 @@ public:
         }
     }
     else {
-        waveTimer += dt;
+        // если у нас не запущена волна в данный момент то дается кд в размере Delay и стартует следующая
+        waveTimer += dt; 
         if (waveTimer >= waveDelay) {
             startNextWave();
         }
@@ -258,8 +266,8 @@ public:
 
      // синхрон для енемей 
         for (int i = 0; i < enemies.size(); i++) {
-            enemies[i]->trace(hero->getX(), hero->getY(), dt);
-            enemyViews[i].setPosition(sf::Vector2f(enemies[i]->getX(), enemies[i]->getY()));
+            enemies[i]->trace(hero->getX(), hero->getY(), dt); // шаг 
+            enemyViews[i].setPosition(sf::Vector2f(enemies[i]->getX(), enemies[i]->getY())); //перемещение 
         }
     }
 
@@ -273,7 +281,7 @@ public:
         }
     }
     
-    // Отрисовка
+    // Отрисовки
     void render() {
         window->clear(sf::Color::Black);
         window->draw(gameField);
