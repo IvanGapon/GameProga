@@ -15,7 +15,7 @@ private:
 
     // Время для стабильного FPS
     sf::Clock deltaClock;
-    float deltaTime;
+    float dt;
 
     // Герой 
     Hero* hero;
@@ -27,6 +27,10 @@ private:
     
     // Игровое поле 
     sf::RectangleShape gameField;
+
+    // по врагам всякие темки 
+    std::vector<Enemy*> enemies;
+    std::vector<sf::RectangleShape> enemyViews;
 
     void initWindow() {
         window = new sf::RenderWindow(
@@ -57,21 +61,103 @@ private:
       hp_line.setFillColor(sf::Color::Green);
       hp_line.setOrigin(sf::Vector2f(25.0f, 3.0f));
   } 
-     
+
+    void SpawnEnemies ( int type){
+        float x = (float)(rand() % WINDOW_WIDTH ) ;
+        float y = (float)(rand() % WINDOW_HEIGHT) ;
+
+        switch (type){
+            case 0: { // быстрый бесячий гад
+
+                Enemy* e = new Enemy(x, y, 30, 200, 5, "Fastic");
+                enemies.push_back(e);
+
+                sf::RectangleShape sq;
+                sq.setSize(sf::Vector2f(25.0f, 25.0f));
+                sq.setFillColor(sf::Color::Red);
+                sq.setOrigin(sf::Vector2f(12.5f, 12.5f));
+
+                enemyViews.push_back(sq);
+                break;
+            }
+            case 1: { // дефолтнич 
+                Enemy* e = new Enemy(x, y, 60, 120, 10, "Normis");
+                enemies.push_back(e);
+
+                sf::RectangleShape sq;
+                sq.setSize(sf::Vector2f(30.0f, 30.0f));
+                sq.setFillColor(sf::Color(200, 100, 0));
+                sq.setOrigin(sf::Vector2f(15.0f, 15.0f));
+
+                enemyViews.push_back(sq);
+                break;
+            }
+            case 2: { // Гад жиртрест 
+                Enemy* e = new Enemy(x, y, 150, 60, 20, "Tank");
+                enemies.push_back(e);
+
+                sf::RectangleShape sq;
+                sq.setSize(sf::Vector2f(40.0f, 40.0f));
+                sq.setFillColor(sf::Color(150, 0, 150));
+                sq.setOrigin(sf::Vector2f(20.0f, 20.0f));
+
+                enemyViews.push_back(sq);
+                break;
+            }
+            case 3: { // Мелкий гад
+
+                Enemy* e = new Enemy(x, y, 15, 150, 3, "Swarm");
+                enemies.push_back(e);
+
+                sf::RectangleShape sq;
+                sq.setSize(sf::Vector2f(18.0f, 18.0f));
+                sq.setFillColor(sf::Color(255, 100, 100));
+                sq.setOrigin(sf::Vector2f(9.0f, 9.0f));
+
+                enemyViews.push_back(sq);
+                break;
+            }
+            case 4: { // Босс —  зеленое чудище 
+                Enemy* e = new Enemy(x, y, 500, 50, 30, "Boss");
+                enemies.push_back(e);
+
+                sf::RectangleShape sq;
+                sq.setSize(sf::Vector2f(70.0f, 70.0f));
+                sq.setFillColor(sf::Color::Green);
+                sq.setOrigin(sf::Vector2f(35.0f, 35.0f));
+    
+                enemyViews.push_back(sq);
+                break;
+            }
+        }
+    }
 public:
     // Запуск игры
     Game() {
         hero = new Hero(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
         working = false;  
-        deltaTime = 0.0f;
+        dt = 0.0f;
+
+        srand(time(nullptr)); // для рандомности и всякости со спавном 
+
         initWindow();
         initGameField();
         initHeroView();
         initHPLine();
+
+        // Тестовые враги — все 4 типа
+        SpawnEnemies(0);  
+        SpawnEnemies(1);  
+        SpawnEnemies(2);  
+        SpawnEnemies(3);  
+        SpawnEnemies(4); 
     }
     
     // я вот если честно ваще хз зачем это, но пишут так надо 
     ~Game() {
+        for (auto e : enemies) 
+            delete e;
+        enemies.clear();
         delete hero; 
         delete window;
     }
@@ -81,7 +167,7 @@ public:
         working = true;
         
         while (working) {
-            deltaTime = deltaClock.restart().asSeconds();
+            dt = deltaClock.restart().asSeconds();
             
             handleEvents();
             update();
@@ -98,7 +184,7 @@ public:
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) dx -= 1.0f;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) dx += 1.0f;
 
-        hero->move(dx * hero->getSpeed() * deltaTime, dy * hero->getSpeed() * deltaTime);
+        hero->move(dx * hero->getSpeed() * dt, dy * hero->getSpeed() * dt);
 
       //чтобы не уходил за крайй
         if (hero->getX() < 20.0f)  hero->set_pos(20.0f, hero->getY());
@@ -118,6 +204,12 @@ public:
 
       // Синхрон
         heroView.setPosition(sf::Vector2f(hero->getX(), hero->getY()));
+
+     // синхрон для енемей 
+        for (int i = 0; i < enemies.size(); i++) {
+            enemies[i]->trace(hero->getX(), hero->getY(), dt);
+            enemyViews[i].setPosition(sf::Vector2f(enemies[i]->getX(), enemies[i]->getY()));
+        }
     }
 
     // Выход через крестик 
@@ -137,6 +229,9 @@ public:
         window->draw(heroView);
         window->draw(hp_fon);
         window->draw(hp_line);
+        for (auto& ev : enemyViews) {
+            window->draw(ev);
+        }
         window->display();
     }
 };
@@ -144,5 +239,6 @@ public:
 int main() {
     Game game;
     game.run();
+
     return 0;
 }
