@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -58,6 +59,7 @@ public:
     void setSpeed(int spd) { hero_speed = spd; }
 
 };
+
 class Enemy {
 private:
 	string enemy_name;
@@ -71,15 +73,15 @@ private:
 	int enemy_damage;
 
 public:
-    Enemy(float start_x, float start_y) {
-        enemy_name = "Enemy";
-        enemy_spead = 100;     
-        enemy_damage = 10;
-        hp = 50;
-        max_hp = 50;
-        pos_x = start_x;
-        pos_y = start_y;
-    }
+    Enemy(float start_x, float start_y, int hp_val, int spd, int dmg, std::string name ) {
+    	enemy_name = name;
+    	enemy_spead = spd;
+    	enemy_damage = dmg;
+   		hp = hp_val;
+    	max_hp = hp_val;
+    	pos_x = start_x;
+    	pos_y = start_y;
+	}
 
     void set_pos ( float st_x , float st_y){
         pos_x = st_x; 
@@ -94,8 +96,19 @@ public:
     }
 	// ну короче какая то идея += я на просторах инета видел что там через теорему пифагора просто в тик он делает 
 	// шаг по кротчайшему расстоянию типо на тебя за условную dt п р впемени 
-	void trace ( float finish_x , float finish_y ){
+	void trace ( float finish_x , float finish_y, float dt  ){
+		float dx = finish_x - pos_x ;
+		float dy = finish_y - pos_y ;
 
+		float dist = sqrt( dx * dx + dy *dy) ; 
+
+		if ( dist != 0) {
+			dx /= dist; 
+			dy /= dist ;
+		}
+
+		pos_x += dx * enemy_spead * dt ; 
+		pos_y += dy * enemy_spead * dt ; 
 	}
 
     float getX() const { return pos_x; }
