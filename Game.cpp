@@ -31,6 +31,16 @@ private:
     // по врагам всякие темки 
     std::vector<Enemy*> enemies;
     std::vector<sf::RectangleShape> enemyViews;
+    
+    // параметры для создания волн врагов
+    bool waverun = false  ;
+    int numWave = 0  ; 
+    int wasspawn  = 0 ;
+    //  времена для волн 
+    float waveTimer = 0.0f;
+    float waveDelay = 5.0f;
+    float spawnTimer = 0.0f;
+    float spawnInterval = 1.0f;
 
     void initWindow() {
         window = new sf::RenderWindow(
@@ -131,6 +141,20 @@ private:
             }
         }
     }
+
+    void startNextWave() {
+        numWave++;
+        wasspawn = 0;
+        spawnTimer = 0.0f;
+        waverun = true;
+
+        if ( numWave > 5 ){
+            waverun = false; 
+            return;
+        }
+    }
+
+
 public:
     // Запуск игры
     Game() {
@@ -145,12 +169,7 @@ public:
         initHeroView();
         initHPLine();
 
-        // Тестовые враги — все 4 типа
-        SpawnEnemies(0);  
-        SpawnEnemies(1);  
-        SpawnEnemies(2);  
-        SpawnEnemies(3);  
-        SpawnEnemies(4); 
+        startNextWave();
     }
     
     // я вот если честно ваще хз зачем это, но пишут так надо 
@@ -176,6 +195,7 @@ public:
     }
 
     void update() {
+      // -- ГЕРОЙ 
       // Движение персонажа 
         float dx = 0, dy = 0; 
 
@@ -197,6 +217,37 @@ public:
         float partHP = (float)hero->getHP() / hero->getMaxHP();
         hp_line.setSize(sf::Vector2f(50.0f * partHP, 6.0f));
 
+    //--- ВРАЖИНЫ 
+    if (waverun) {
+        spawnTimer += dt;
+        int eneminwave = 3 + 2 * numWave ;
+        if (spawnTimer >= spawnInterval && wasspawn < eneminwave) {
+            int type;
+            if (numWave == 5) {
+                type = 4;  
+                eneminwave = 1 ;
+            }
+            else {
+                type = rand() % 4;  // случайный тип
+            }
+            SpawnEnemies(type);
+            wasspawn++;
+            spawnTimer = 0.0f;
+        }
+    
+        if (wasspawn >= eneminwave && enemies.empty()) {
+            waverun = false;
+            waveTimer = 0.0f;
+        }
+    }
+    else {
+        waveTimer += dt;
+        if (waveTimer >= waveDelay) {
+            startNextWave();
+        }
+}
+
+    // --- Графические приколы 
       // Позиция над героем
         sf::Vector2f hpPos(hero->getX(), hero->getY() - 20.0f);
         hp_fon.setPosition(hpPos);
