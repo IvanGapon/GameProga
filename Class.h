@@ -241,3 +241,47 @@ public:
 	}
 
 };
+
+class Bullet {
+private:
+    float pos_x, pos_y;
+    float direction_x, direction_y;
+    float speed;
+    int damage;
+    bool active;
+    sf::RectangleShape shape;
+
+public:
+    Bullet(float start_x, float start_y, float dir_x, float dir_y, int dmg) {
+        pos_x = start_x;
+        pos_y = start_y;
+        direction_x = dir_x;
+        direction_y = dir_y;
+        speed = 500.0f;
+        damage = dmg;
+        active = true;
+
+        shape.setSize(sf::Vector2f(5.0f, 5.0f));
+        shape.setFillColor(sf::Color::Yellow);
+        shape.setOrigin(sf::Vector2f(2.5f, 2.5f));
+    }
+
+    void update(float dt) {
+        pos_x += direction_x * speed * dt;
+        pos_y += direction_y * speed * dt;
+        shape.setPosition(sf::Vector2f(pos_x, pos_y));
+    }
+
+    void draw(sf::RenderWindow* window) {
+        if (active) {
+            window->draw(shape);
+        }
+    }
+
+    bool isActive() const { return active; }
+    void setActive(bool act) { active = act; }
+
+    float getX() const { return pos_x; }
+    float getY() const { return pos_y; }
+    int getDamage() const { return damage; }
+};
