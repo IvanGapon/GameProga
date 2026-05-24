@@ -55,7 +55,9 @@ private:
     std::vector<Weapon> groundWeapons;
     float weaponSpawnTimer = 0.0f;
     float weaponSpawnDelay = 15.0f; // каждые 8 секунд появляется новое оружие
-    float weaponGroundTimer;
+
+    // для аптеки 
+    HealthPack* healthPack;
 
      void shoot() {
         sf::Vector2i mousePos = sf::Mouse::getPosition(*window);
@@ -277,6 +279,11 @@ public:
         initHPLine();
         // сразу по началу игры создаем волну 
         startNextWave();
+
+        float hx = rand() % 900 + 62;
+        float hy = rand() % 650 + 59;
+        healthPack = new HealthPack(hx, hy);
+
     }
 
     // я вот если честно ваще хз зачем это, но пишут так надо 
@@ -287,6 +294,7 @@ public:
         enemies.clear();
         delete hero;
         delete window;
+        delete healthPack;
     }
 
     // Главный игровой цикл 
@@ -441,6 +449,21 @@ public:
 
         // Обработка столкновений
         handleCollisions();
+
+         // --- АПТЕЧКИ ---
+        healthPack->update(dt);
+        
+        if (healthPack->isActive()) {
+            float dx = hero->getX() - healthPack->getX();
+            float dy = hero->getY() - healthPack->getY();
+            float dist = sqrt(dx * dx + dy * dy);
+            
+            if (dist < 30.0f) {
+                int healAmount = hero->getMaxHP() * 0.3f;
+                hero->take_damage(-healAmount);  // отрицательный урон = лечение
+                healthPack->pickUp();
+            }
+        }
     }
 
     // Выход через крестик 
@@ -460,6 +483,7 @@ public:
         window->draw(heroView);
         window->draw(hp_fon);
         window->draw(hp_line);
+        healthPack->draw(window);
 
         for (auto& ev : enemyViews) {
             window->draw(ev);
