@@ -1,4 +1,5 @@
 #pragma once
+#include <SFML/Graphics.hpp>
 #include <string>
 #include <iostream>
 #include <cmath>
@@ -19,6 +20,12 @@ private:
 	int hero_damage;
 
     string weapon ; 
+    string current_weapon_type;
+    float weapon_fire_rate;
+    int weapon_bullets_per_shot;
+    float weapon_spread_angle;
+    float weapon_damage_multiplier;
+	float weapon_timer;
 
 public:
     Hero(float start_x, float start_y) {
@@ -30,6 +37,13 @@ public:
         max_hp = 100;
         pos_x = start_x;
         pos_y = start_y;
+
+		current_weapon_type = "rifle";
+        weapon_fire_rate = 0.25f;
+        weapon_bullets_per_shot = 1;
+        weapon_spread_angle = 0.1f;
+        weapon_damage_multiplier = 1.0f;
+		weapon_timer = 0.0f;
     }
 
     void move ( float dx , float dy ){
@@ -54,10 +68,43 @@ public:
     int getMaxHP() const { return max_hp; }
     int getSpeed() const { return hero_speed; }
     int getDamage() const { return hero_damage; }
-    
-    void setDamage(int dmg) { hero_damage = dmg; }
-    void setSpeed(int spd) { hero_speed = spd; }
 
+	void setWeapon(string type, float rate, int bullets, float spread, float dmg_mult) {
+        current_weapon_type = type;
+        weapon_fire_rate = rate;
+        weapon_bullets_per_shot = bullets;
+        weapon_spread_angle = spread;
+        weapon_damage_multiplier = dmg_mult;
+        
+        if (type == "rifle") {
+            weapon_timer = 0.0f;
+        } 
+		else {
+            weapon_timer = 8.0f;
+        }
+    }
+    
+    float getWeaponFireRate() const { return weapon_fire_rate; }
+    int getWeaponBulletsPerShot() const { return weapon_bullets_per_shot; }
+    float getWeaponSpreadAngle() const { return weapon_spread_angle; }
+    float getWeaponDamageMultiplier() const { return weapon_damage_multiplier; }
+	float getWeaponTimer() const { return weapon_timer; }
+
+	void updateWeaponTimer(float dt) {
+        if (weapon_timer > 0.0f) {
+            weapon_timer -= dt;
+            if (weapon_timer <= 0.0f) {
+                current_weapon_type = "rifle";
+                weapon_fire_rate = 0.25f;
+                weapon_bullets_per_shot = 1;
+                weapon_spread_angle = 0.1f;
+                weapon_damage_multiplier = 1.0f;
+                weapon_timer = 0.0f;
+            }
+        }
+    }
+    
+    
 };
 
 class Enemy {
@@ -123,82 +170,151 @@ public:
 
 };
 
-
-
-
-
-
-
-class Gun {
+class Bullet {
 private:
-	string gun_name;
-	int gun_speed;
-	int gun_damage;
-	int gun_weight;
-public:
-	Gun() {
-		 gun_name = "";
-		 gun_speed = -1;
-		 gun_damage = -1;
-		 gun_weight = -1;
-	}
-	Gun(string gun_name,int gun_speed,int gun_damage,int gun_weight) {
-		this->gun_name = gun_name;
-		this->gun_speed = gun_speed;
-		this->gun_damage = gun_damage;
-		this->gun_weight = gun_weight;
-	}
-
-	string Get_gun_name() { return gun_name; }
-	int Get_gun_speed() { return gun_speed; }
-	int Get_gun_damage() { return gun_damage; }
-	int Get_gun_weight() { return gun_weight; }
-
-	void Set_gun_name(string gun_name) { this->gun_name = gun_name; }
-	void Set_gun_speed(int gun_speed) { this->gun_speed = gun_speed; }
-	void Set_gun_damage(int gun_damage) { this->gun_damage = gun_damage; }
-	void Set_gun_weight(int gun_weight) { this->gun_weight = gun_weight; }
-
-	void Print() {
-		cout << gun_name << gun_speed << gun_damage << gun_weight << endl;
-	}
-
-
-};
-
-class Patron {
-	
-private:
-	string patron_name;
-	string patron_debaf;
-	int patron_damage;
+    float pos_x, pos_y;
+    float direction_x, direction_y;
+    float speed;
+    int damage;
+    bool active;
+    sf::RectangleShape shape;
 
 public:
+    Bullet(float start_x, float start_y, float dir_x, float dir_y, int dmg) {
+        pos_x = start_x;
+        pos_y = start_y;
+        direction_x = dir_x;
+        direction_y = dir_y;
+        speed = 500.0f;
+        damage = dmg;
+        active = true;
 
-	Patron() {
-		 patron_name = "";
-		 patron_debaf = "";
-		 patron_damage = -1;
-	}
+        shape.setSize(sf::Vector2f(5.0f, 5.0f));
+        shape.setFillColor(sf::Color::Yellow);
+        shape.setOrigin(sf::Vector2f(2.5f, 2.5f));
+    }
 
-	Patron(string patron_name, string patron_debaf, int patron_damage) {
-		this->patron_name = patron_name;
-		this->patron_debaf = patron_debaf;
-		this->patron_damage = patron_damage;
-	}
-	
-	string Get_patron_name() { return patron_name; }
-	string Get_patron_debaf() { return patron_debaf; }
-	int Get_patron_damage() { return patron_damage; }
+    void update(float dt) {
+        pos_x += direction_x * speed * dt;
+        pos_y += direction_y * speed * dt;
+        shape.setPosition(sf::Vector2f(pos_x, pos_y));
+    }
 
-	void Set_patron_name(string patron_name) { this->patron_name = patron_name; }
-	void Set_patron_debaf(string patron_debaf) { this->patron_debaf = patron_debaf; }
-	void Set_patron_damage(int patron_damage) { this->patron_damage = patron_damage; }
+    void draw(sf::RenderWindow* window) {
+        if (active) {
+            window->draw(shape);
+        }
+    }
 
-	void Print() {
-		cout << patron_name << patron_debaf << patron_damage << endl;
-	}
+    bool isActive() const { return active; }
+    void setActive(bool act) { active = act; }
+	void setSpeed(float spd) { speed = spd; }
+    float getX() const { return pos_x; }
+    float getY() const { return pos_y; }
+    int getDamage() const { return damage; }
 };
+
+
+class Weapon {
+private:
+    string weapon_type;     
+    float fire_rate;        // задержка между выстрелами
+    int bullets_per_shot;   // сколько пуль за выстрел
+    float spread_angle;     // угол разброса
+    float damage_multiplier;
+    float pos_x, pos_y;
+    bool on_ground;  // лежит на земле или уже подобрано
+    sf::RectangleShape view;
+    float respawn_timer; // таймер до следующего появления
+    float ground_time; // таймер сколько валяется 
+    bool active;// активно ли оружие сейчас
+  
+public:
+// конструктор соотв 
+    Weapon(string type, float x, float y) {
+        weapon_type = type;
+        pos_x = x;
+        pos_y = y;
+        on_ground = true;
+        active = true;
+        respawn_timer = 0.0f;
+        ground_time = 0.0f;
+        
+        if (type == "rifle") { // автомат типо быстро стреляет небольшой разброс 
+            fire_rate = 0.25f;
+            bullets_per_shot = 1;
+            spread_angle = 0.1f;
+            damage_multiplier = 1.0f;
+            view.setSize(sf::Vector2f(15.0f, 10.0f));
+            view.setFillColor(sf::Color(100, 100, 100));
+        }
+        else if (type == "shotgun") { // ну дробаш куча дерьма вылетает и дамажит 
+            fire_rate = 0.8f;
+            bullets_per_shot = 5;
+            spread_angle = 0.3f;
+            damage_multiplier = 0.4f;
+            view.setSize(sf::Vector2f(20.0f, 12.0f));
+            view.setFillColor(sf::Color(200, 100, 0));
+        }
+        else if (type == "sniper") { // винтовка типо супер медленная но 10х урона 
+            fire_rate = 1.5f;
+            bullets_per_shot = 1;
+            spread_angle = 0.0f;
+            damage_multiplier = 10.0f;
+            view.setSize(sf::Vector2f(30.0f, 5.0f));
+            view.setFillColor(sf::Color(180, 180, 180));
+        }
+        
+        view.setOrigin(sf::Vector2f(view.getSize().x / 2, view.getSize().y / 2));
+        view.setPosition(sf::Vector2f(pos_x, pos_y));
+    }
+    
+    string getType() const { return weapon_type; }
+    float getFireRate() const { return fire_rate; }
+    int getBulletsPerShot() const { return bullets_per_shot; }
+    float getSpreadAngle() const { return spread_angle; }
+    float getDamageMultiplier() const { return damage_multiplier; }
+    float getX() const { return pos_x; }
+    float getY() const { return pos_y; }
+    bool isOnGround() const { return on_ground; }
+    bool isActive() const { return active; }
+    
+    void pickUp() { 
+        on_ground = false; 
+        active = false;
+    }
+    
+    void updateRespawn(float dt) {
+        if (on_ground && active) {
+            ground_time += dt;
+            if (ground_time >= 8.0f) {
+                active = false;
+                on_ground = false;
+                ground_time = 0.0f;
+            }
+        }
+        else if (!active) {
+            respawn_timer += dt;
+            if (respawn_timer >= 15.0f) {
+                active = true;
+                on_ground = true;
+                respawn_timer = 0.0f;
+                ground_time = 0.0f;
+                
+                pos_x = rand() % 900 + 62;
+                pos_y = rand() % 650 + 59;
+                view.setPosition(sf::Vector2f(pos_x, pos_y));
+            }
+        }
+    }
+    
+    void draw(sf::RenderWindow* window) {
+        if (active && on_ground) {
+            window->draw(view);
+        }
+    }
+};
+
 
 
 
@@ -240,48 +356,4 @@ public:
 		cout << battlefield_name << battlefield_debaf_speed << battlefield_debaf_ability <<battlefield_floor << endl;
 	}
 
-};
-
-class Bullet {
-private:
-    float pos_x, pos_y;
-    float direction_x, direction_y;
-    float speed;
-    int damage;
-    bool active;
-    sf::RectangleShape shape;
-
-public:
-    Bullet(float start_x, float start_y, float dir_x, float dir_y, int dmg) {
-        pos_x = start_x;
-        pos_y = start_y;
-        direction_x = dir_x;
-        direction_y = dir_y;
-        speed = 500.0f;
-        damage = dmg;
-        active = true;
-
-        shape.setSize(sf::Vector2f(5.0f, 5.0f));
-        shape.setFillColor(sf::Color::Yellow);
-        shape.setOrigin(sf::Vector2f(2.5f, 2.5f));
-    }
-
-    void update(float dt) {
-        pos_x += direction_x * speed * dt;
-        pos_y += direction_y * speed * dt;
-        shape.setPosition(sf::Vector2f(pos_x, pos_y));
-    }
-
-    void draw(sf::RenderWindow* window) {
-        if (active) {
-            window->draw(shape);
-        }
-    }
-
-    bool isActive() const { return active; }
-    void setActive(bool act) { active = act; }
-
-    float getX() const { return pos_x; }
-    float getY() const { return pos_y; }
-    int getDamage() const { return damage; }
 };
