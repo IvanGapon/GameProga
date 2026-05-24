@@ -48,16 +48,19 @@ private:
     float spawnInterval = 1.0f;
 
     // Пули
-        std::vector<Bullet> bullets;
+    std::vector<Bullet> bullets;
     float shootCooldown = 0.0f;
-    float shootDelay = 0.3f; // Задержка между выстрелами
 
-    void shoot() {
-        //считал направление мыши
+    // Оружие на карте
+    std::vector<Weapon> groundWeapons;
+    float weaponSpawnTimer = 0.0f;
+    float weaponSpawnDelay = 15.0f; // каждые 8 секунд появляется новое оружие
+    float weaponGroundTimer;
+
+     void shoot() {
         sf::Vector2i mousePos = sf::Mouse::getPosition(*window);
         sf::Vector2f heroPos(hero->getX(), hero->getY());
 
-        // вычисляем направление от мыши до курсора
         float dx = mousePos.x - heroPos.x;
         float dy = mousePos.y - heroPos.y;
         float length = sqrt(dx * dx + dy * dy);
@@ -67,9 +70,29 @@ private:
             dy /= length;
         }
 
-        // Создаем пулю с уроном от героя
-        Bullet bullet(hero->getX(), hero->getY(), dx, dy, hero->getDamage());
-        bullets.push_back(bullet);
+        // Стреляем в зависимости от оружия
+        int bulletCount = hero->getWeaponBulletsPerShot();
+        float spread = hero->getWeaponSpreadAngle();
+        
+        for (int i = 0; i < bulletCount; i++) {
+            float angle = atan2(dy, dx);
+            
+            // Разброс для нескольких пуль
+            if (bulletCount > 1) {
+                float offset = (i - (bulletCount - 1) / 2.0f) * (spread / (bulletCount - 1));
+                angle += offset;
+            } else if (spread > 0) {
+                // Случайный разброс для автомата
+                angle += ((rand() % 100) / 100.0f - 0.5f) * spread;
+            }
+            
+            float newDx = cos(angle);
+            float newDy = sin(angle);
+            
+            int dmg = hero->getDamage() * hero->getWeaponDamageMultiplier();
+            Bullet bullet(hero->getX(), hero->getY(), newDx, newDy, dmg);
+            bullets.push_back(bullet);
+        }
     }
 
     void handleCollisions() {
@@ -306,16 +329,23 @@ public:
         if (waverun) {
             // короче 5 волн, вражины на волне по формуле где енеми ин вейв 
             spawnTimer += dt;
-            int eneminwave = 3 + 2 * numWave;
+            int eneminwave;
+            if (numWave == 5) {
+                eneminwave = 1 ;
+            }
+            else{
+                eneminwave = 3 + 2 * numWave;
+            }
             if (spawnTimer >= spawnInterval && wasspawn < eneminwave) { // проверяем временной интервал и что не набили максимум 
                 int type;
+
                 if (numWave == 5) {
                     type = 4;
-                    eneminwave = 1;
                 }
                 else {
                     type = rand() % 4;  // случайный тип
                 }
+
                 SpawnEnemies(type);
                 wasspawn++;
                 spawnTimer = 0.0f;
@@ -340,7 +370,7 @@ public:
         sf::Vector2f hpPos(hero->getX(), hero->getY() - 20.0f);
         hp_fon.setPosition(hpPos);
         hp_line.setPosition(hpPos);
-
+        
         // Синхрон
         heroView.setPosition(sf::Vector2f(hero->getX(), hero->getY()));
 
@@ -349,11 +379,54 @@ public:
             enemies[i]->trace(hero->getX(), hero->getY(), dt); // шаг 
             enemyViews[i].setPosition(sf::Vector2f(enemies[i]->getX(), enemies[i]->getY())); //перемещение 
         }
+         // Обновление таймера оружия героя
+        hero->updateWeaponTimer(dt);
+
+        // --- ОРУЖИЕ НА КАРТЕ ---
+        // Спавн нового оружия
+        weaponSpawnTimer += dt;
+          if (weaponSpawnTimer >= weaponSpawnDelay && groundWeapons.size() < 2) {
+            string type;
+            int r = rand() % 2;
+            if (r == 0) type = "shotgun";
+            else type = "sniper";
+            
+            float wx = rand() % 900 + 62;
+            float wy = rand() % 650 + 59;
+            
+            groundWeapons.push_back(Weapon(type, wx, wy));
+            weaponSpawnTimer = 0.0f;
+        }
+        
+        // Обновление таймеров оружия
+        for (auto& weapon : groundWeapons) {
+            weapon.updateRespawn(dt);
+        }
+
+        // Проверка подбора оружия
+        for (auto& weapon : groundWeapons) {
+            if (weapon.isActive() && weapon.isOnGround()) {
+                float dx = hero->getX() - weapon.getX();
+                float dy = hero->getY() - weapon.getY();
+                float dist = sqrt(dx * dx + dy * dy);
+                
+                if (dist < 30.0f) { // расстояние подбора
+                    hero->setWeapon(weapon.getType(), 
+                                   weapon.getFireRate(),
+                                   weapon.getBulletsPerShot(),
+                                   weapon.getSpreadAngle(),
+                                   weapon.getDamageMultiplier());
+                    weapon.pickUp();
+                }
+            }
+        }
+
+        
         // стрельба
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
             if (shootCooldown <= 0.0f) {
                 shoot();
-                shootCooldown = shootDelay;
+                shootCooldown = hero->getWeaponFireRate();
             }
         }
 
@@ -394,6 +467,10 @@ public:
         // ну понятно думаю отрисовка пуль
         for (auto& bullet : bullets) {
             bullet.draw(window);
+        }
+
+        for (auto& weapon : groundWeapons) {
+            weapon.draw(window);
         }
 
         window->display();
