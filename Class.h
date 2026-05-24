@@ -55,10 +55,13 @@ public:
         pos_y = st_y ; 
     }
 
-    void take_damage ( int damage ){
-        hp -= damage ; 
-        if ( hp < 0 ){
-            hp = 0 ; 
+    void take_damage(int damage) {
+        hp -= damage;
+        if (hp < 0) {
+            hp = 0;
+        }
+        if (hp > max_hp) {
+            hp = max_hp;
         }
     }
 
@@ -311,6 +314,83 @@ public:
     void draw(sf::RenderWindow* window) {
         if (active && on_ground) {
             window->draw(view);
+        }
+    }
+};
+class HealthPack {
+private:
+    float pos_x, pos_y;
+    bool active;
+    float respawn_timer;
+    float ground_time;
+    sf::RectangleShape view;
+    sf::RectangleShape cross_h;  
+    sf::RectangleShape cross_v; 
+    
+public:
+    HealthPack(float x, float y) {
+        pos_x = x;
+        pos_y = y;
+        active = true;
+        respawn_timer = 0.0f;
+        ground_time = 0.0f;
+        
+        // Фон аптечки
+        view.setSize(sf::Vector2f(20.0f, 20.0f));
+        view.setFillColor(sf::Color(0, 100, 0));
+        view.setOrigin(sf::Vector2f(10.0f, 10.0f));
+        view.setPosition(sf::Vector2f(pos_x, pos_y));
+        
+        // Горизонтальная часть креста
+        cross_h.setSize(sf::Vector2f(14.0f, 4.0f));
+        cross_h.setFillColor(sf::Color(0, 255, 0));
+        cross_h.setOrigin(sf::Vector2f(7.0f, 2.0f));
+        cross_h.setPosition(sf::Vector2f(pos_x, pos_y));
+        
+        // Вертикальная часть креста
+        cross_v.setSize(sf::Vector2f(4.0f, 14.0f));
+        cross_v.setFillColor(sf::Color(0, 255, 0));
+        cross_v.setOrigin(sf::Vector2f(2.0f, 7.0f));
+        cross_v.setPosition(sf::Vector2f(pos_x, pos_y));
+    }
+    
+    float getX() const { return pos_x; }
+    float getY() const { return pos_y; }
+    bool isActive() const { return active; }
+    
+    void pickUp() {
+        active = false;
+    }
+    
+    void update(float dt) {
+        if (active) {
+            ground_time += dt;
+            if (ground_time >= 10.0f) {  // исчезает через 10 секунд
+                active = false;
+                ground_time = 0.0f;
+            }
+        }
+        else {
+            respawn_timer += dt;
+            if (respawn_timer >= 20.0f) {  // появляется через 20 секунд
+                active = true;
+                respawn_timer = 0.0f;
+                ground_time = 0.0f;
+                
+                pos_x = rand() % 900 + 62;
+                pos_y = rand() % 650 + 59;
+                view.setPosition(sf::Vector2f(pos_x, pos_y));
+                cross_h.setPosition(sf::Vector2f(pos_x, pos_y));
+                cross_v.setPosition(sf::Vector2f(pos_x, pos_y));
+            }
+        }
+    }
+    
+    void draw(sf::RenderWindow* window) {
+        if (active) {
+            window->draw(view);
+            window->draw(cross_h);
+            window->draw(cross_v);
         }
     }
 };
