@@ -8,51 +8,51 @@ using namespace std;
 
 class Hero {
 private:
-	string hero_name;
-	string hero_ability;
+    string hero_name;
+    string hero_ability;
 
-    int hp ;
-    int max_hp ;
+    int hp;
+    int max_hp;
 
-    float pos_x , pos_y ;
+    float pos_x, pos_y;
 
-	int hero_speed;
-	int hero_damage;
+    int hero_speed;
+    int hero_damage;
 
-    string weapon ; 
+    string weapon;
     string current_weapon_type;
     float weapon_fire_rate;
     int weapon_bullets_per_shot;
     float weapon_spread_angle;
     float weapon_damage_multiplier;
-	float weapon_timer;
+    float weapon_timer;
 
 public:
     Hero(float start_x, float start_y) {
         hero_name = "Player";
         hero_ability = "";
-        hero_speed = 200;     
+        hero_speed = 200;
         hero_damage = 10;
         hp = 100;
         max_hp = 100;
         pos_x = start_x;
         pos_y = start_y;
 
-		current_weapon_type = "rifle";
+        current_weapon_type = "rifle";
         weapon_fire_rate = 0.25f;
         weapon_bullets_per_shot = 1;
         weapon_spread_angle = 0.1f;
         weapon_damage_multiplier = 1.0f;
-		weapon_timer = 0.0f;
+        weapon_timer = 0.0f;
     }
 
-    void move ( float dx , float dy ){
-        pos_x += dx ; 
-        pos_y += dy ; 
+    void move(float dx, float dy) {
+        pos_x += dx;
+        pos_y += dy;
     }
-    void set_pos ( float st_x , float st_y){
-        pos_x = st_x; 
-        pos_y = st_y ; 
+    void set_pos(float st_x, float st_y) {
+        pos_x = st_x;
+        pos_y = st_y;
     }
 
     void take_damage(int damage) {
@@ -72,28 +72,33 @@ public:
     int getSpeed() const { return hero_speed; }
     int getDamage() const { return hero_damage; }
 
-	void setWeapon(string type, float rate, int bullets, float spread, float dmg_mult) {
+    
+    string getCurrentWeaponType() const {
+        return current_weapon_type;
+    }
+
+    void setWeapon(string type, float rate, int bullets, float spread, float dmg_mult) {
         current_weapon_type = type;
         weapon_fire_rate = rate;
         weapon_bullets_per_shot = bullets;
         weapon_spread_angle = spread;
         weapon_damage_multiplier = dmg_mult;
-        
+
         if (type == "rifle") {
             weapon_timer = 0.0f;
-        } 
-		else {
+        }
+        else {
             weapon_timer = 8.0f;
         }
     }
-    
+
     float getWeaponFireRate() const { return weapon_fire_rate; }
     int getWeaponBulletsPerShot() const { return weapon_bullets_per_shot; }
     float getWeaponSpreadAngle() const { return weapon_spread_angle; }
     float getWeaponDamageMultiplier() const { return weapon_damage_multiplier; }
-	float getWeaponTimer() const { return weapon_timer; }
+    float getWeaponTimer() const { return weapon_timer; }
 
-	void updateWeaponTimer(float dt) {
+    void updateWeaponTimer(float dt) {
         if (weapon_timer > 0.0f) {
             weapon_timer -= dt;
             if (weapon_timer <= 0.0f) {
@@ -106,60 +111,58 @@ public:
             }
         }
     }
-    
-    
 };
 
 class Enemy {
 private:
-	string enemy_name;
+    string enemy_name;
 
-    int hp ;
-    int max_hp ;
+    int hp;
+    int max_hp;
 
-    float pos_x , pos_y ;
+    float pos_x, pos_y;
 
-	int enemy_spead;
-	int enemy_damage;
+    int enemy_spead;
+    int enemy_damage;
 
 public:
-    Enemy(float start_x, float start_y, int hp_val, int spd, int dmg, std::string name ) {
-    	enemy_name = name;
-    	enemy_spead = spd;
-    	enemy_damage = dmg;
-   		hp = hp_val;
-    	max_hp = hp_val;
-    	pos_x = start_x;
-    	pos_y = start_y;
-	}
-
-    void set_pos ( float st_x , float st_y){
-        pos_x = st_x; 
-        pos_y = st_y ; 
+    Enemy(float start_x, float start_y, int hp_val, int spd, int dmg, std::string name) {
+        enemy_name = name;
+        enemy_spead = spd;
+        enemy_damage = dmg;
+        hp = hp_val;
+        max_hp = hp_val;
+        pos_x = start_x;
+        pos_y = start_y;
     }
 
-    void take_damage ( int damage ){
-        hp -= damage ; 
-        if ( hp < 0 ){
-            hp = 0 ; 
+    void set_pos(float st_x, float st_y) {
+        pos_x = st_x;
+        pos_y = st_y;
+    }
+
+    void take_damage(int damage) {
+        hp -= damage;
+        if (hp < 0) {
+            hp = 0;
         }
     }
-	// ну короче какая то идея += я на просторах инета видел что там через теорему пифагора просто в тик он делает 
-	// шаг по кротчайшему расстоянию типо на тебя за условную dt п р впемени 
-	void trace ( float finish_x , float finish_y, float dt  ){
-		float dx = finish_x - pos_x ;
-		float dy = finish_y - pos_y ;
+    // ну короче какая то идея += я на просторах инета видел что там через теорему пифагора просто в тик он делает 
+    // шаг по кротчайшему расстоянию типо на тебя за условную dt п р впемени 
+    void trace(float finish_x, float finish_y, float dt) {
+        float dx = finish_x - pos_x;
+        float dy = finish_y - pos_y;
 
-		float dist = sqrt( dx * dx + dy *dy) ; 
+        float dist = sqrt(dx * dx + dy * dy);
 
-		if ( dist != 0) {
-			dx /= dist; 
-			dy /= dist ;
-		}
+        if (dist != 0) {
+            dx /= dist;
+            dy /= dist;
+        }
 
-		pos_x += dx * enemy_spead * dt ; 
-		pos_y += dy * enemy_spead * dt ; 
-	}
+        pos_x += dx * enemy_spead * dt;
+        pos_y += dy * enemy_spead * dt;
+    }
 
     float getX() const { return pos_x; }
     float getY() const { return pos_y; }
@@ -167,7 +170,7 @@ public:
     int getMaxHP() const { return max_hp; }
     int getSpeed() const { return enemy_spead; }
     int getDamage() const { return enemy_damage; }
-    
+
     void setDamage(int dmg) { enemy_damage = dmg; }
     void setSpeed(int spd) { enemy_spead = spd; }
 
@@ -211,7 +214,7 @@ public:
 
     bool isActive() const { return active; }
     void setActive(bool act) { active = act; }
-	void setSpeed(float spd) { speed = spd; }
+    void setSpeed(float spd) { speed = spd; }
     float getX() const { return pos_x; }
     float getY() const { return pos_y; }
     int getDamage() const { return damage; }
@@ -220,7 +223,7 @@ public:
 
 class Weapon {
 private:
-    string weapon_type;     
+    string weapon_type;
     float fire_rate;        // задержка между выстрелами
     int bullets_per_shot;   // сколько пуль за выстрел
     float spread_angle;     // угол разброса
@@ -231,9 +234,9 @@ private:
     float respawn_timer; // таймер до следующего появления
     float ground_time; // таймер сколько валяется 
     bool active;// активно ли оружие сейчас
-  
+
 public:
-// конструктор соотв 
+    // конструктор соотв 
     Weapon(string type, float x, float y) {
         weapon_type = type;
         pos_x = x;
@@ -242,7 +245,7 @@ public:
         active = true;
         respawn_timer = 0.0f;
         ground_time = 0.0f;
-        
+
         if (type == "rifle") { // автомат типо быстро стреляет небольшой разброс 
             fire_rate = 0.25f;
             bullets_per_shot = 1;
@@ -267,11 +270,11 @@ public:
             view.setSize(sf::Vector2f(30.0f, 5.0f));
             view.setFillColor(sf::Color(180, 180, 180));
         }
-        
+
         view.setOrigin(sf::Vector2f(view.getSize().x / 2, view.getSize().y / 2));
         view.setPosition(sf::Vector2f(pos_x, pos_y));
     }
-    
+
     string getType() const { return weapon_type; }
     float getFireRate() const { return fire_rate; }
     int getBulletsPerShot() const { return bullets_per_shot; }
@@ -281,12 +284,12 @@ public:
     float getY() const { return pos_y; }
     bool isOnGround() const { return on_ground; }
     bool isActive() const { return active; }
-    
-    void pickUp() { 
-        on_ground = false; 
+
+    void pickUp() {
+        on_ground = false;
         active = false;
     }
-    
+
     void updateRespawn(float dt) {
         if (on_ground && active) {
             ground_time += dt;
@@ -303,14 +306,14 @@ public:
                 on_ground = true;
                 respawn_timer = 0.0f;
                 ground_time = 0.0f;
-                
+
                 pos_x = rand() % 900 + 62;
                 pos_y = rand() % 650 + 59;
                 view.setPosition(sf::Vector2f(pos_x, pos_y));
             }
         }
     }
-    
+
     void draw(sf::RenderWindow* window) {
         if (active && on_ground) {
             window->draw(view);
@@ -324,9 +327,9 @@ private:
     float respawn_timer;
     float ground_time;
     sf::RectangleShape view;
-    sf::RectangleShape cross_h;  
-    sf::RectangleShape cross_v; 
-    
+    sf::RectangleShape cross_h;
+    sf::RectangleShape cross_v;
+
 public:
     HealthPack(float x, float y) {
         pos_x = x;
@@ -334,34 +337,34 @@ public:
         active = true;
         respawn_timer = 0.0f;
         ground_time = 0.0f;
-        
+
         // Фон аптечки
         view.setSize(sf::Vector2f(20.0f, 20.0f));
         view.setFillColor(sf::Color(0, 100, 0));
         view.setOrigin(sf::Vector2f(10.0f, 10.0f));
         view.setPosition(sf::Vector2f(pos_x, pos_y));
-        
+
         // Горизонтальная часть креста
         cross_h.setSize(sf::Vector2f(14.0f, 4.0f));
         cross_h.setFillColor(sf::Color(0, 255, 0));
         cross_h.setOrigin(sf::Vector2f(7.0f, 2.0f));
         cross_h.setPosition(sf::Vector2f(pos_x, pos_y));
-        
+
         // Вертикальная часть креста
         cross_v.setSize(sf::Vector2f(4.0f, 14.0f));
         cross_v.setFillColor(sf::Color(0, 255, 0));
         cross_v.setOrigin(sf::Vector2f(2.0f, 7.0f));
         cross_v.setPosition(sf::Vector2f(pos_x, pos_y));
     }
-    
+
     float getX() const { return pos_x; }
     float getY() const { return pos_y; }
     bool isActive() const { return active; }
-    
+
     void pickUp() {
         active = false;
     }
-    
+
     void update(float dt) {
         if (active) {
             ground_time += dt;
@@ -376,7 +379,7 @@ public:
                 active = true;
                 respawn_timer = 0.0f;
                 ground_time = 0.0f;
-                
+
                 pos_x = rand() % 900 + 62;
                 pos_y = rand() % 650 + 59;
                 view.setPosition(sf::Vector2f(pos_x, pos_y));
@@ -385,7 +388,7 @@ public:
             }
         }
     }
-    
+
     void draw(sf::RenderWindow* window) {
         if (active) {
             window->draw(view);
@@ -402,38 +405,38 @@ class Battlefield {
 
 private:
 
-	string battlefield_name;
-	string battlefield_debaf_speed;
-	string battlefield_debaf_ability;
-	string battlefield_floor;
+    string battlefield_name;
+    string battlefield_debaf_speed;
+    string battlefield_debaf_ability;
+    string battlefield_floor;
 
 public:
-	Battlefield() {
-		 battlefield_name = "";
-		 battlefield_debaf_speed = "";
-		 battlefield_debaf_ability = "";
-		 battlefield_floor = "";
-	}
-	Battlefield(string battlefield_name,string battlefield_debaf_speed,string battlefield_debaf_ability, string battlefield_floor) {
+    Battlefield() {
+        battlefield_name = "";
+        battlefield_debaf_speed = "";
+        battlefield_debaf_ability = "";
+        battlefield_floor = "";
+    }
+    Battlefield(string battlefield_name, string battlefield_debaf_speed, string battlefield_debaf_ability, string battlefield_floor) {
 
-		this->battlefield_name = battlefield_name;
-		this->battlefield_debaf_speed = battlefield_debaf_speed;
-		this->battlefield_debaf_ability = battlefield_debaf_ability;
-		this->battlefield_floor = battlefield_floor;
-	}
+        this->battlefield_name = battlefield_name;
+        this->battlefield_debaf_speed = battlefield_debaf_speed;
+        this->battlefield_debaf_ability = battlefield_debaf_ability;
+        this->battlefield_floor = battlefield_floor;
+    }
 
-	string Get_battlefield_name() { return battlefield_name; }
-	string Get_battlefield_debaf_speed() {return battlefield_debaf_speed;}
-	string Get_battlefield_debaf_ability() { return battlefield_debaf_ability; }
-	string Get_battlefield_floor() { return battlefield_floor; }
+    string Get_battlefield_name() { return battlefield_name; }
+    string Get_battlefield_debaf_speed() { return battlefield_debaf_speed; }
+    string Get_battlefield_debaf_ability() { return battlefield_debaf_ability; }
+    string Get_battlefield_floor() { return battlefield_floor; }
 
-	void Set_battlefield_name(string battlefield_name) { this->battlefield_name = battlefield_name; }
-	void Set_battlefield_debaf_speed(string battlefield_debaf_speed) { this->battlefield_debaf_speed = battlefield_debaf_speed; }
-	void Set_battlefield_debaf_ability(string battlefield_debaf_ability) { this->battlefield_debaf_ability = battlefield_debaf_ability; }
-	void Set_battlefield_floor(string battlefield_floor) { this->battlefield_floor = battlefield_floor; }
+    void Set_battlefield_name(string battlefield_name) { this->battlefield_name = battlefield_name; }
+    void Set_battlefield_debaf_speed(string battlefield_debaf_speed) { this->battlefield_debaf_speed = battlefield_debaf_speed; }
+    void Set_battlefield_debaf_ability(string battlefield_debaf_ability) { this->battlefield_debaf_ability = battlefield_debaf_ability; }
+    void Set_battlefield_floor(string battlefield_floor) { this->battlefield_floor = battlefield_floor; }
 
-	void Print() {
-		cout << battlefield_name << battlefield_debaf_speed << battlefield_debaf_ability <<battlefield_floor << endl;
-	}
+    void Print() {
+        cout << battlefield_name << battlefield_debaf_speed << battlefield_debaf_ability << battlefield_floor << endl;
+    }
 
 };
