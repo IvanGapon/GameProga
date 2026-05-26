@@ -2,9 +2,9 @@
 #include <cstdlib>  
 #include <ctime>  
 #include <iostream>
-#include<vector>
-#include<algorithm>
-#include<cmath>
+#include <vector>
+#include <algorithm>
+#include <cmath>
 #include "Class.h"
 
 class Game {
@@ -27,21 +27,20 @@ private:
 
     // Визуал героя — белый шарик
     sf::CircleShape heroView;
-    sf::RectangleShape hp_fon;  // фон полоски (красный)
-    sf::RectangleShape hp_line;  // сама полоска (зелёная)
+    sf::RectangleShape hp_fon;
+    sf::RectangleShape hp_line;
 
     // Игровое поле 
     sf::RectangleShape gameField;
 
-    // по врагам всякие темки 
+    // Враги
     std::vector<Enemy*> enemies;
     std::vector<sf::RectangleShape> enemyViews;
 
-    // параметры для создания волн врагов
+    // Волны
     bool waverun = false;
     int numWave = 0;
     int wasspawn = 0;
-    //  времена для волн всякие разные 
     float waveTimer = 0.0f;
     float waveDelay = 5.0f;
     float spawnTimer = 0.0f;
@@ -54,12 +53,23 @@ private:
     // Оружие на карте
     std::vector<Weapon> groundWeapons;
     float weaponSpawnTimer = 0.0f;
-    float weaponSpawnDelay = 15.0f; // каждые 8 секунд появляется новое оружие
+    float weaponSpawnDelay = 15.0f;
 
-    // для аптеки 
+    // Аптечка
     HealthPack* healthPack;
 
-     void shoot() {
+    // ========== ПРОСТАЯ РЕАЛИЗАЦИЯ ТЕКСТА ==========
+    sf::Font font;
+    bool fontLoaded;
+
+    // Текст для отображения (будем создавать каждый кадр, а не хранить в классе)
+
+    float waveCompleteTimer = 0.0f;
+    float gameCompleteTimer = 0.0f;
+    bool gameComplete = false;
+    int enemiesKilledInWave = 0;
+
+    void shoot() {
         sf::Vector2i mousePos = sf::Mouse::getPosition(*window);
         sf::Vector2f heroPos(hero->getX(), hero->getY());
 
@@ -72,25 +82,23 @@ private:
             dy /= length;
         }
 
-        // Стреляем в зависимости от оружия
         int bulletCount = hero->getWeaponBulletsPerShot();
         float spread = hero->getWeaponSpreadAngle();
-        
+
         for (int i = 0; i < bulletCount; i++) {
             float angle = atan2(dy, dx);
-            
-            // Разброс для нескольких пуль
+
             if (bulletCount > 1) {
                 float offset = (i - (bulletCount - 1) / 2.0f) * (spread / (bulletCount - 1));
                 angle += offset;
-            } else if (spread > 0) {
-                // Случайный разброс для автомата
+            }
+            else if (spread > 0) {
                 angle += ((rand() % 100) / 100.0f - 0.5f) * spread;
             }
-            
+
             float newDx = cos(angle);
             float newDy = sin(angle);
-            
+
             int dmg = hero->getDamage() * hero->getWeaponDamageMultiplier();
             Bullet bullet(hero->getX(), hero->getY(), newDx, newDy, dmg);
             bullets.push_back(bullet);
@@ -98,7 +106,6 @@ private:
     }
 
     void handleCollisions() {
-        // Проверка столкновений пуль с врагами (идем с конца)
         for (int i = bullets.size() - 1; i >= 0; i--) {
             if (!bullets[i].isActive()) continue;
 
@@ -107,7 +114,7 @@ private:
                 float dy = bullets[i].getY() - enemies[j]->getY();
                 float distance = sqrt(dx * dx + dy * dy);
 
-                if (distance < 30.0f) { // радиус 
+                if (distance < 30.0f) {
                     enemies[j]->take_damage(bullets[i].getDamage());
                     bullets[i].setActive(false);
 
@@ -115,36 +122,31 @@ private:
                         delete enemies[j];
                         enemies.erase(enemies.begin() + j);
                         enemyViews.erase(enemyViews.begin() + j);
+                        enemiesKilledInWave++;
                     }
                     break;
                 }
             }
         }
 
-        // Удаляем неактивные пули
         bullets.erase(
             std::remove_if(bullets.begin(), bullets.end(),
                 [](const Bullet& b) { return !b.isActive(); }),
             bullets.end()
         );
 
-        // Проверка столкновений героя с врагами так надо
         for (int i = enemies.size() - 1; i >= 0; i--) {
             float dx = hero->getX() - enemies[i]->getX();
             float dy = hero->getY() - enemies[i]->getY();
             float distance = sqrt(dx * dx + dy * dy);
 
-            if (distance < 35.0f) { // столкновение это тоже надо
+            if (distance < 35.0f) {
                 hero->take_damage(enemies[i]->getDamage());
-
-                // Отбрасываем врага
                 float angle = atan2(dy, dx);
                 enemies[i]->set_pos(
                     enemies[i]->getX() - cos(angle) * 60,
                     enemies[i]->getY() - sin(angle) * 60
                 );
-
-                
             }
         }
     }
@@ -169,6 +171,7 @@ private:
         heroView.setFillColor(sf::Color::White);
         heroView.setOrigin(sf::Vector2f(15.0f, 15.0f));
     }
+
     void initHPLine() {
         hp_fon.setSize(sf::Vector2f(50.0f, 6.0f));
         hp_fon.setFillColor(sf::Color::Red);
@@ -179,116 +182,147 @@ private:
         hp_line.setOrigin(sf::Vector2f(25.0f, 3.0f));
     }
 
+    void initFont() {
+        fontLoaded = false;
+        if (font.openFromFile("arial.ttf")) {
+            fontLoaded = true;
+        }
+        else if (font.openFromFile("C:/Windows/Fonts/arial.ttf")) {
+            fontLoaded = true;
+        }
+        else if (font.openFromFile("C:/Windows/Fonts/Arial.ttf")) {
+            fontLoaded = true;
+        }
+
+        if (!fontLoaded) {
+            std::cout << "Warning: Could not load font. Text will not be displayed.\n";
+        }
+    }
+
     void SpawnEnemies(int type) {
-        // тут задается рандомная координата для спавна гадины ползучей 
         float x = (float)(rand() % WINDOW_WIDTH);
         float y = (float)(rand() % WINDOW_HEIGHT);
 
         switch (type) {
-        case 0: { // быстрый бесячий гад
-
+        case 0: {
             Enemy* e = new Enemy(x, y, 30, 200, 5, "Fastic");
             enemies.push_back(e);
-
             sf::RectangleShape sq;
             sq.setSize(sf::Vector2f(25.0f, 25.0f));
             sq.setFillColor(sf::Color::Red);
             sq.setOrigin(sf::Vector2f(12.5f, 12.5f));
-
             enemyViews.push_back(sq);
             break;
         }
-        case 1: { // дефолтнич 
+        case 1: {
             Enemy* e = new Enemy(x, y, 60, 120, 10, "Normis");
             enemies.push_back(e);
-
             sf::RectangleShape sq;
             sq.setSize(sf::Vector2f(30.0f, 30.0f));
             sq.setFillColor(sf::Color(200, 100, 0));
             sq.setOrigin(sf::Vector2f(15.0f, 15.0f));
-
             enemyViews.push_back(sq);
             break;
         }
-        case 2: { // Гад жиртрест 
+        case 2: {
             Enemy* e = new Enemy(x, y, 150, 60, 20, "Tank");
             enemies.push_back(e);
-
             sf::RectangleShape sq;
             sq.setSize(sf::Vector2f(40.0f, 40.0f));
             sq.setFillColor(sf::Color(150, 0, 150));
             sq.setOrigin(sf::Vector2f(20.0f, 20.0f));
-
             enemyViews.push_back(sq);
             break;
         }
-        case 3: { // Мелкий гад
-
+        case 3: {
             Enemy* e = new Enemy(x, y, 15, 150, 3, "Swarm");
             enemies.push_back(e);
-
             sf::RectangleShape sq;
             sq.setSize(sf::Vector2f(18.0f, 18.0f));
             sq.setFillColor(sf::Color(255, 100, 100));
             sq.setOrigin(sf::Vector2f(9.0f, 9.0f));
-
             enemyViews.push_back(sq);
             break;
         }
-        case 4: { // Босс —  зеленое чудище 
+        case 4: {
             Enemy* e = new Enemy(x, y, 500, 50, 30, "Boss");
             enemies.push_back(e);
-
             sf::RectangleShape sq;
             sq.setSize(sf::Vector2f(70.0f, 70.0f));
             sq.setFillColor(sf::Color::Green);
             sq.setOrigin(sf::Vector2f(35.0f, 35.0f));
-
             enemyViews.push_back(sq);
             break;
         }
         }
     }
 
-    void startNextWave() { // ну вот войд функция перезагрузки волны по сути 
+    void startNextWave() {
         numWave++;
         wasspawn = 0;
+        enemiesKilledInWave = 0;
         spawnTimer = 0.0f;
         waverun = true;
+        waveCompleteTimer = 0.0f;
 
-        if (numWave > 5) {// тут ограничение на волны если надо можно править тут 
+        if (numWave > 5) {
             waverun = false;
+            gameComplete = true;
+            gameCompleteTimer = 3.0f;
             return;
         }
     }
 
+    void showWaveComplete() {
+        waveCompleteTimer = 2.0f;
+    }
+
+    // Функция для отрисовки текста (создаем текст каждый раз при отрисовке)
+    void drawText(float x, float y, const std::string& text, int size, sf::Color color, bool centered = false) {
+        if (!fontLoaded) return;
+
+        sf::Text txt(font);
+        txt.setString(text);
+        txt.setCharacterSize(size);
+        txt.setFillColor(color);
+
+        if (centered) {
+            sf::FloatRect bounds = txt.getLocalBounds();
+            txt.setOrigin(sf::Vector2f(bounds.size.x / 2, bounds.size.y / 2));
+            txt.setPosition(sf::Vector2f(x, y));
+        }
+        else {
+            txt.setPosition(sf::Vector2f(x, y));
+        }
+
+        window->draw(txt);
+    }
 
 public:
-    // Запуск игры
     Game() {
         hero = new Hero(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
         working = false;
         dt = 0.0f;
+        gameComplete = false;
+        waveCompleteTimer = 0.0f;
+        gameCompleteTimer = 0.0f;
+        enemiesKilledInWave = 0;
 
-        srand(time(nullptr)); // для рандомности и всякости со спавном 
+        srand(time(nullptr));
 
-        // тут запускаем отрисовки 
         initWindow();
         initGameField();
         initHeroView();
         initHPLine();
-        // сразу по началу игры создаем волну 
+        initFont();  // Загружаем шрифт
         startNextWave();
 
         float hx = rand() % 900 + 62;
         float hy = rand() % 650 + 59;
         healthPack = new HealthPack(hx, hy);
-
     }
 
-    // я вот если честно ваще хз зачем это, но пишут так надо 
     ~Game() {
-        // ну тут думаю все понятно 
         for (auto e : enemies)
             delete e;
         enemies.clear();
@@ -297,7 +331,6 @@ public:
         delete healthPack;
     }
 
-    // Главный игровой цикл 
     void run() {
         working = true;
 
@@ -305,16 +338,39 @@ public:
             dt = deltaClock.restart().asSeconds();
 
             handleEvents();
-            update();
+
+            if (!gameComplete) {
+                update();
+            }
+            else {
+                if (gameCompleteTimer > 0.0f) {
+                    gameCompleteTimer -= dt;
+                }
+            }
+
             render();
+
+            if (gameComplete && gameCompleteTimer <= 0.0f) {
+                working = false;
+                window->close();
+            }
         }
     }
 
     void update() {
-        // -- ГЕРОЙ 
-        // Движение персонажа 
-        float dx = 0, dy = 0;
+        if (gameComplete) {
+            if (gameCompleteTimer > 0.0f) {
+                gameCompleteTimer -= dt;
+            }
+            return;
+        }
 
+        if (waveCompleteTimer > 0.0f) {
+            waveCompleteTimer -= dt;
+        }
+
+        // Движение героя
+        float dx = 0, dy = 0;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) dy -= 1.0f;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) dy += 1.0f;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) dx -= 1.0f;
@@ -322,151 +378,115 @@ public:
 
         hero->move(dx * hero->getSpeed() * dt, dy * hero->getSpeed() * dt);
 
-        //чтобы не уходил за крайй
-        if (hero->getX() < 20.0f)  hero->set_pos(20.0f, hero->getY());
-        if (hero->getX() > WINDOW_WIDTH - 20.0f)
-            hero->set_pos(WINDOW_WIDTH - 20.0f, hero->getY());
-        if (hero->getY() < 20.0f)  hero->set_pos(hero->getX(), 20.0f);
-        if (hero->getY() > WINDOW_HEIGHT - 20.0f)
-            hero->set_pos(hero->getX(), WINDOW_HEIGHT - 20.0f);
+        if (hero->getX() < 20.0f) hero->set_pos(20.0f, hero->getY());
+        if (hero->getX() > WINDOW_WIDTH - 20.0f) hero->set_pos(WINDOW_WIDTH - 20.0f, hero->getY());
+        if (hero->getY() < 20.0f) hero->set_pos(hero->getX(), 20.0f);
+        if (hero->getY() > WINDOW_HEIGHT - 20.0f) hero->set_pos(hero->getX(), WINDOW_HEIGHT - 20.0f);
 
         float partHP = (float)hero->getHP() / hero->getMaxHP();
         hp_line.setSize(sf::Vector2f(50.0f * partHP, 6.0f));
 
-        //--- ВРАЖИНЫ 
+        // Волны
         if (waverun) {
-            // короче 5 волн, вражины на волне по формуле где енеми ин вейв 
             spawnTimer += dt;
-            int eneminwave;
-            if (numWave == 5) {
-                eneminwave = 1 ;
-            }
-            else{
-                eneminwave = 3 + 2 * numWave;
-            }
-            if (spawnTimer >= spawnInterval && wasspawn < eneminwave) { // проверяем временной интервал и что не набили максимум 
-                int type;
+            int eneminwave = (numWave == 5) ? 1 : (3 + 2 * numWave);
 
-                if (numWave == 5) {
-                    type = 4;
-                }
-                else {
-                    type = rand() % 4;  // случайный тип
-                }
-
+            if (spawnTimer >= spawnInterval && wasspawn < eneminwave) {
+                int type = (numWave == 5) ? 4 : (rand() % 4);
                 SpawnEnemies(type);
                 wasspawn++;
                 spawnTimer = 0.0f;
-                // ну вот сверху зарандомили и увеличили счетчики 
             }
 
             if (wasspawn >= eneminwave && enemies.empty()) {
                 waverun = false;
                 waveTimer = 0.0f;
+                showWaveComplete();
             }
         }
         else {
-            // если у нас не запущена волна в данный момент то дается кд в размере Delay и стартует следующая
             waveTimer += dt;
             if (waveTimer >= waveDelay) {
                 startNextWave();
             }
         }
 
-        // --- Графические приколы 
-          // Позиция над героем
+        // Позиции
         sf::Vector2f hpPos(hero->getX(), hero->getY() - 20.0f);
         hp_fon.setPosition(hpPos);
         hp_line.setPosition(hpPos);
-        
-        // Синхрон
         heroView.setPosition(sf::Vector2f(hero->getX(), hero->getY()));
 
-        // синхрон для енемей 
+        // Движение врагов
         for (int i = 0; i < enemies.size(); i++) {
-            enemies[i]->trace(hero->getX(), hero->getY(), dt); // шаг 
-            enemyViews[i].setPosition(sf::Vector2f(enemies[i]->getX(), enemies[i]->getY())); //перемещение 
+            enemies[i]->trace(hero->getX(), hero->getY(), dt);
+            enemyViews[i].setPosition(sf::Vector2f(enemies[i]->getX(), enemies[i]->getY()));
         }
-         // Обновление таймера оружия героя
+
         hero->updateWeaponTimer(dt);
 
-        // --- ОРУЖИЕ НА КАРТЕ ---
-        // Спавн нового оружия
+        // Оружие на карте
         weaponSpawnTimer += dt;
-          if (weaponSpawnTimer >= weaponSpawnDelay && groundWeapons.size() < 2) {
-            string type;
-            int r = rand() % 2;
-            if (r == 0) type = "shotgun";
-            else type = "sniper";
-            
+        if (weaponSpawnTimer >= weaponSpawnDelay && groundWeapons.size() < 2) {
+            string type = (rand() % 2 == 0) ? "shotgun" : "sniper";
             float wx = rand() % 900 + 62;
             float wy = rand() % 650 + 59;
-            
             groundWeapons.push_back(Weapon(type, wx, wy));
             weaponSpawnTimer = 0.0f;
         }
-        
-        // Обновление таймеров оружия
+
         for (auto& weapon : groundWeapons) {
             weapon.updateRespawn(dt);
         }
 
-        // Проверка подбора оружия
         for (auto& weapon : groundWeapons) {
             if (weapon.isActive() && weapon.isOnGround()) {
                 float dx = hero->getX() - weapon.getX();
                 float dy = hero->getY() - weapon.getY();
                 float dist = sqrt(dx * dx + dy * dy);
-                
-                if (dist < 30.0f) { // расстояние подбора
-                    hero->setWeapon(weapon.getType(), 
-                                   weapon.getFireRate(),
-                                   weapon.getBulletsPerShot(),
-                                   weapon.getSpreadAngle(),
-                                   weapon.getDamageMultiplier());
+                if (dist < 30.0f) {
+                    hero->setWeapon(weapon.getType(),
+                        weapon.getFireRate(),
+                        weapon.getBulletsPerShot(),
+                        weapon.getSpreadAngle(),
+                        weapon.getDamageMultiplier());
                     weapon.pickUp();
                 }
             }
         }
 
-        
-        // стрельба
+        // Стрельба
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
             if (shootCooldown <= 0.0f) {
                 shoot();
                 shootCooldown = hero->getWeaponFireRate();
             }
         }
+        if (shootCooldown > 0.0f) shootCooldown -= dt;
 
-        if (shootCooldown > 0.0f) {
-            shootCooldown -= dt;
-        }
-
-        // Обновление пуль
-        for (auto& bullet : bullets) {
-            bullet.update(dt);
-        }
-
-        // Обработка столкновений
+        for (auto& bullet : bullets) bullet.update(dt);
         handleCollisions();
 
-         // --- АПТЕЧКИ ---
+        // Аптечка
         healthPack->update(dt);
-        
         if (healthPack->isActive()) {
             float dx = hero->getX() - healthPack->getX();
             float dy = hero->getY() - healthPack->getY();
             float dist = sqrt(dx * dx + dy * dy);
-            
             if (dist < 30.0f) {
                 int healAmount = hero->getMaxHP() * 0.3f;
-                hero->take_damage(-healAmount);  // отрицательный урон = лечение
+                hero->take_damage(-healAmount);
                 healthPack->pickUp();
             }
         }
+
+        // Смерть героя
+        if (hero->getHP() <= 0) {
+            gameComplete = true;
+            gameCompleteTimer = 3.0f;
+        }
     }
 
-    // Выход через крестик 
     void handleEvents() {
         while (const auto event = window->pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
@@ -476,7 +496,6 @@ public:
         }
     }
 
-    // Отрисовки
     void render() {
         window->clear(sf::Color::Black);
         window->draw(gameField);
@@ -485,16 +504,48 @@ public:
         window->draw(hp_line);
         healthPack->draw(window);
 
-        for (auto& ev : enemyViews) {
-            window->draw(ev);
-        }
-        // ну понятно думаю отрисовка пуль
-        for (auto& bullet : bullets) {
-            bullet.draw(window);
+        for (auto& ev : enemyViews) window->draw(ev);
+        for (auto& bullet : bullets) bullet.draw(window);
+
+        // Оружие с подписями
+        for (auto& weapon : groundWeapons) {
+            if (weapon.isActive() && weapon.isOnGround()) {
+                weapon.draw(window);
+
+                string label = (weapon.getType() == "shotgun") ? "SHOTGUN" :
+                    (weapon.getType() == "sniper") ? "SNIPER" : "WEAPON";
+                drawText(weapon.getX(), weapon.getY() - 25, label, 14, sf::Color::White, true);
+            }
         }
 
-        for (auto& weapon : groundWeapons) {
-            weapon.draw(window);
+        // Информация о волне
+        int eneminwave = (numWave == 5) ? 1 : (3 + 2 * numWave);
+        std::string waveInfo = "WAVE: " + std::to_string(numWave) + "/5   Enemies: " +
+            std::to_string(enemiesKilledInWave) + "/" + std::to_string(eneminwave);
+        drawText(20, 20, waveInfo, 24, sf::Color::White, false);
+
+        // Сообщение о завершении волны
+        if (waveCompleteTimer > 0.0f) {
+            drawText(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2,
+                "WAVE " + std::to_string(numWave) + " COMPLETE!",
+                36, sf::Color::Yellow, true);
+        }
+
+        // Сообщение о завершении игры
+        if (gameComplete) {
+            if (numWave > 5 && hero->getHP() > 0) {
+                drawText(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 50,
+                    "GAME COMPLETE!\nYou defeated the boss!",
+                    48, sf::Color::Red, true);
+            }
+            else if (hero->getHP() <= 0) {
+                drawText(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 50,
+                    "GAME OVER! You died...",
+                    48, sf::Color::Red, true);
+            }
+            drawText(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 50,
+                "Press ESC or close window to exit",
+                20, sf::Color::White, true);
         }
 
         window->display();
@@ -504,6 +555,7 @@ public:
 int main() {
     Game game;
     game.run();
-
+    return 0;
+}
     return 0;
 }
