@@ -202,8 +202,63 @@ private:
     }
 
     void SpawnEnemies(int type) {
-        float x = (float)(rand() % WINDOW_WIDTH);
-        float y = (float)(rand() % WINDOW_HEIGHT);
+        float x = 50.0f, y = 50.0f;
+        bool validPosition = false;
+        
+        for (int attempt = 0; attempt < 100; attempt++) {
+            float testX = (float)(rand() % (WINDOW_WIDTH - 100) + 50);
+            float testY = (float)(rand() % (WINDOW_HEIGHT - 100) + 50);
+            
+            bool collides = false;
+            for (auto& wall : walls) {
+                sf::FloatRect spawnBounds(
+                    sf::Vector2f(testX - 20.0f, testY - 20.0f), 
+                    sf::Vector2f(40.0f, 40.0f)
+                );
+                
+                if (wall.getGlobalBounds().findIntersection(spawnBounds)) {
+                    collides = true;
+                    break;
+                }
+            }
+            
+            float distToHero = sqrt(pow(testX - hero->getX(), 2) + pow(testY - hero->getY(), 2));
+            
+            if (!collides && distToHero >= 150.0f) {
+                x = testX;
+                y = testY;
+                validPosition = true;
+                break;
+            }
+        }
+        
+        if (!validPosition) {
+            float corners[4][2] = {
+                {100.0f, 100.0f},
+                {WINDOW_WIDTH - 100.0f, 100.0f},
+                {100.0f, WINDOW_HEIGHT - 100.0f},
+                {WINDOW_WIDTH - 100.0f, WINDOW_HEIGHT - 100.0f}
+            };
+            
+            for (int i = 0; i < 4; i++) {
+                bool collides = false;
+                for (auto& wall : walls) {
+                    sf::FloatRect spawnBounds(
+                        sf::Vector2f(corners[i][0] - 20.0f, corners[i][1] - 20.0f), 
+                        sf::Vector2f(40.0f, 40.0f)
+                    );
+                    if (wall.getGlobalBounds().findIntersection(spawnBounds)) {
+                        collides = true;
+                        break;
+                    }
+                }
+                if (!collides) {
+                    x = corners[i][0];
+                    y = corners[i][1];
+                    break;
+                }
+            }
+        }
 
         switch (type) {
         case 0: {
@@ -362,31 +417,48 @@ private:
             walls.push_back(wall2);
         }
         else if (numWave == 4) {
-            // Нормальный лабиринт
-            sf::RectangleShape wall1(sf::Vector2f(30.0f, 400.0f));
-            wall1.setFillColor(sf::Color(200, 100, 100));
-            wall1.setPosition(sf::Vector2f(250.0f, 100.0f));
-            walls.push_back(wall1);
+            // Красивый лабиринт с проходами
+            sf::Color wallColor(150, 100, 100);
             
-            sf::RectangleShape wall2(sf::Vector2f(30.0f, 400.0f));
-            wall2.setFillColor(sf::Color(200, 100, 100));
-            wall2.setPosition(sf::Vector2f(500.0f, 268.0f));
-            walls.push_back(wall2);
+            // Верхняя левая стенка
+            walls.push_back(sf::RectangleShape(sf::Vector2f(200.0f, 20.0f)));
+            walls.back().setFillColor(wallColor);
+            walls.back().setPosition(sf::Vector2f(100.0f, 200.0f));
             
-            sf::RectangleShape wall3(sf::Vector2f(30.0f, 400.0f));
-            wall3.setFillColor(sf::Color(200, 100, 100));
-            wall3.setPosition(sf::Vector2f(750.0f, 100.0f));
-            walls.push_back(wall3);
+            // Верхняя правая стенка
+            walls.push_back(sf::RectangleShape(sf::Vector2f(200.0f, 20.0f)));
+            walls.back().setFillColor(wallColor);
+            walls.back().setPosition(sf::Vector2f(400.0f, 200.0f));
             
-            sf::RectangleShape wall4(sf::Vector2f(280.0f, 30.0f));
-            wall4.setFillColor(sf::Color(200, 100, 100));
-            wall4.setPosition(sf::Vector2f(250.0f, 400.0f));
-            walls.push_back(wall4);
+            // Нижняя левая стенка
+            walls.push_back(sf::RectangleShape(sf::Vector2f(200.0f, 20.0f)));
+            walls.back().setFillColor(wallColor);
+            walls.back().setPosition(sf::Vector2f(100.0f, 500.0f));
             
-            sf::RectangleShape wall5(sf::Vector2f(250.0f, 30.0f));
-            wall5.setFillColor(sf::Color(200, 100, 100));
-            wall5.setPosition(sf::Vector2f(500.0f, 300.0f));
-            walls.push_back(wall5);
+            // Нижняя правая стенка
+            walls.push_back(sf::RectangleShape(sf::Vector2f(200.0f, 20.0f)));
+            walls.back().setFillColor(wallColor);
+            walls.back().setPosition(sf::Vector2f(400.0f, 500.0f));
+            
+            // Центральная вертикальная стенка
+            walls.push_back(sf::RectangleShape(sf::Vector2f(20.0f, 200.0f)));
+            walls.back().setFillColor(wallColor);
+            walls.back().setPosition(sf::Vector2f(350.0f, 200.0f));
+            
+            // Центральный блок
+            walls.push_back(sf::RectangleShape(sf::Vector2f(100.0f, 100.0f)));
+            walls.back().setFillColor(wallColor);
+            walls.back().setPosition(sf::Vector2f(462.0f, 334.0f));
+            
+            // Правая вертикальная стенка
+            walls.push_back(sf::RectangleShape(sf::Vector2f(20.0f, 300.0f)));
+            walls.back().setFillColor(wallColor);
+            walls.back().setPosition(sf::Vector2f(700.0f, 100.0f));
+            
+            // Левая вертикальная стенка
+            walls.push_back(sf::RectangleShape(sf::Vector2f(20.0f, 300.0f)));
+            walls.back().setFillColor(wallColor);
+            walls.back().setPosition(sf::Vector2f(200.0f, 300.0f));
         }
     }
 
@@ -543,17 +615,30 @@ public:
         hp_fon.setPosition(hpPos);
         hp_line.setPosition(hpPos);
         heroView.setPosition(sf::Vector2f(hero->getX(), hero->getY()));
-
-        // проверяем на то что бы враги не тыкались мордой в стену 
+        // Движение врагов со скольжением вдоль стен
         for (int i = 0; i < enemies.size(); i++) {
-            // Сохраняем старую позицию
             float oldX = enemies[i]->getX();
             float oldY = enemies[i]->getY();
+            float speed = enemies[i]->getSpeed();
             
-            enemies[i]->trace(hero->getX(), hero->getY(), dt);
+            // Направление к герою
+            float toHeroX = hero->getX() - oldX;
+            float toHeroY = hero->getY() - oldY;
+            float distToHero = sqrt(toHeroX * toHeroX + toHeroY * toHeroY);
             
-            // Проверка столкновений со стенами
-            bool collidesWithWall = false;
+            if (distToHero > 0) {
+                toHeroX /= distToHero;
+                toHeroY /= distToHero;
+            }
+            
+            // Пробуем полное движение
+            float newX = oldX + toHeroX * speed * dt;
+            float newY = oldY + toHeroY * speed * dt;
+            
+            enemies[i]->set_pos(newX, newY);
+            
+            // Проверяем столкновение
+            bool wallCollision = false;
             for (auto& wall : walls) {
                 sf::FloatRect enemyBounds(
                     sf::Vector2f(enemies[i]->getX() - 15.0f, enemies[i]->getY() - 15.0f), 
@@ -561,13 +646,52 @@ public:
                 );
                 
                 if (wall.getGlobalBounds().findIntersection(enemyBounds)) {
-                    collidesWithWall = true;
+                    wallCollision = true;
+                    break;
                 }
             }
             
-            // Если есть столкновение, возвращаем на старую позицию
-            if (collidesWithWall) {
-                enemies[i]->set_pos(oldX, oldY);
+            if (wallCollision) {
+                // Пробуем только X
+                enemies[i]->set_pos(newX, oldY);
+                bool xCollision = false;
+                for (auto& wall : walls) {
+                    sf::FloatRect enemyBounds(
+                        sf::Vector2f(enemies[i]->getX() - 15.0f, enemies[i]->getY() - 15.0f), 
+                        sf::Vector2f(30.0f, 30.0f)
+                    );
+                    if (wall.getGlobalBounds().findIntersection(enemyBounds)) {
+                        xCollision = true;
+                        break;
+                    }
+                }
+                
+                // Пробуем только Y
+                enemies[i]->set_pos(oldX, newY);
+                bool yCollision = false;
+                for (auto& wall : walls) {
+                    sf::FloatRect enemyBounds(
+                        sf::Vector2f(enemies[i]->getX() - 15.0f, enemies[i]->getY() - 15.0f), 
+                        sf::Vector2f(30.0f, 30.0f)
+                    );
+                    if (wall.getGlobalBounds().findIntersection(enemyBounds)) {
+                        yCollision = true;
+                        break;
+                    }
+                }
+                
+                // Если оба варианта со стеной - стоим на месте
+                if (xCollision && yCollision) {
+                    enemies[i]->set_pos(oldX, oldY);
+                }
+                // Если только X свободен - оставляем X движение
+                else if (!xCollision) {
+                    enemies[i]->set_pos(newX, oldY);
+                }
+                // Если только Y свободен - оставляем Y движение
+                else {
+                    enemies[i]->set_pos(oldX, newY);
+                }
             }
             
             enemyViews[i].setPosition(sf::Vector2f(enemies[i]->getX(), enemies[i]->getY()));
