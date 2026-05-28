@@ -56,8 +56,10 @@ private:
     float weaponSpawnDelay = 15.0f;
 
     // Аптечка
-    HealthPack* healthPack;
-
+    HealthPack* healthPack; 
+    
+    // Стены
+    std::vector<sf::RectangleShape> walls;
     // ========== ПРОСТАЯ РЕАЛИЗАЦИЯ ТЕКСТА ==========
     sf::Font font;
     bool fontLoaded;
@@ -259,6 +261,7 @@ private:
 
     void startNextWave() {
         numWave++;
+        spawnWallsForWave();
         wasspawn = 0;
         enemiesKilledInWave = 0;
         spawnTimer = 0.0f;
@@ -296,6 +299,95 @@ private:
         }
 
         window->draw(txt);
+    }
+
+    // спавнер припятсвий в зависимости от волны 
+    void spawnWallsForWave() {
+        walls.clear();
+        
+        if (numWave == 1) {
+            // 5 белых квадратов
+            sf::RectangleShape wall1(sf::Vector2f(50.0f, 50.0f));
+            wall1.setFillColor(sf::Color::White);
+            wall1.setPosition(sf::Vector2f(200.0f, 200.0f));
+            walls.push_back(wall1);
+            
+            sf::RectangleShape wall2(sf::Vector2f(50.0f, 50.0f));
+            wall2.setFillColor(sf::Color::White);
+            wall2.setPosition(sf::Vector2f(400.0f, 300.0f));
+            walls.push_back(wall2);
+            
+            sf::RectangleShape wall3(sf::Vector2f(50.0f, 50.0f));
+            wall3.setFillColor(sf::Color::White);
+            wall3.setPosition(sf::Vector2f(600.0f, 200.0f));
+            walls.push_back(wall3);
+            
+            sf::RectangleShape wall4(sf::Vector2f(50.0f, 50.0f));
+            wall4.setFillColor(sf::Color::White);
+            wall4.setPosition(sf::Vector2f(300.0f, 500.0f));
+            walls.push_back(wall4);
+            
+            sf::RectangleShape wall5(sf::Vector2f(50.0f, 50.0f));
+            wall5.setFillColor(sf::Color::White);
+            wall5.setPosition(sf::Vector2f(700.0f, 500.0f));
+            walls.push_back(wall5);
+        }
+        else if (numWave == 2) {
+            // 4 стены по углам + 1 в центре
+            for (int i = 0; i < 4; i++) {
+                sf::RectangleShape wall(sf::Vector2f(80.0f, 80.0f));
+                wall.setFillColor(sf::Color(150, 150, 150));
+                float x = (i % 2 == 0) ? 100.0f : WINDOW_WIDTH - 180.0f;
+                float y = (i / 2 == 0) ? 100.0f : WINDOW_HEIGHT - 180.0f;
+                wall.setPosition(sf::Vector2f(x, y));
+                walls.push_back(wall);
+            }
+            
+            // Квадрат в центре
+            sf::RectangleShape centerWall(sf::Vector2f(100.0f, 100.0f));
+            centerWall.setFillColor(sf::Color(200, 200, 200));
+            centerWall.setPosition(sf::Vector2f(WINDOW_WIDTH / 2 - 50, WINDOW_HEIGHT / 2 - 50));
+            walls.push_back(centerWall);
+        }
+        else if (numWave == 3) {
+            // Коридор из стен
+            sf::RectangleShape wall1(sf::Vector2f(400.0f, 30.0f));
+            wall1.setFillColor(sf::Color(100, 100, 200));
+            wall1.setPosition(sf::Vector2f(312.0f, 250.0f));
+            walls.push_back(wall1);
+            
+            sf::RectangleShape wall2(sf::Vector2f(400.0f, 30.0f));
+            wall2.setFillColor(sf::Color(100, 100, 200));
+            wall2.setPosition(sf::Vector2f(312.0f, 450.0f));
+            walls.push_back(wall2);
+        }
+        else if (numWave == 4) {
+            // Нормальный лабиринт
+            sf::RectangleShape wall1(sf::Vector2f(30.0f, 400.0f));
+            wall1.setFillColor(sf::Color(200, 100, 100));
+            wall1.setPosition(sf::Vector2f(250.0f, 100.0f));
+            walls.push_back(wall1);
+            
+            sf::RectangleShape wall2(sf::Vector2f(30.0f, 400.0f));
+            wall2.setFillColor(sf::Color(200, 100, 100));
+            wall2.setPosition(sf::Vector2f(500.0f, 268.0f));
+            walls.push_back(wall2);
+            
+            sf::RectangleShape wall3(sf::Vector2f(30.0f, 400.0f));
+            wall3.setFillColor(sf::Color(200, 100, 100));
+            wall3.setPosition(sf::Vector2f(750.0f, 100.0f));
+            walls.push_back(wall3);
+            
+            sf::RectangleShape wall4(sf::Vector2f(280.0f, 30.0f));
+            wall4.setFillColor(sf::Color(200, 100, 100));
+            wall4.setPosition(sf::Vector2f(250.0f, 400.0f));
+            walls.push_back(wall4);
+            
+            sf::RectangleShape wall5(sf::Vector2f(250.0f, 30.0f));
+            wall5.setFillColor(sf::Color(200, 100, 100));
+            wall5.setPosition(sf::Vector2f(500.0f, 300.0f));
+            walls.push_back(wall5);
+        }
     }
 
 public:
@@ -376,7 +468,42 @@ public:
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) dx -= 1.0f;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) dx += 1.0f;
 
+        // Сохраняем старую позицию
+        float oldHeroX = hero->getX();
+        float oldHeroY = hero->getY();
+
         hero->move(dx * hero->getSpeed() * dt, dy * hero->getSpeed() * dt);
+
+        // Проверка столкновений героя со стенами и выталкивание
+        for (auto& wall : walls) {
+            sf::FloatRect heroBounds(
+                sf::Vector2f(hero->getX() - 15.0f, hero->getY() - 15.0f), 
+                sf::Vector2f(30.0f, 30.0f)
+            );
+            
+            if (wall.getGlobalBounds().findIntersection(heroBounds)) {
+                // Находим пересечение для выталкивания
+                sf::FloatRect wallBounds = wall.getGlobalBounds();
+                auto intersection = heroBounds.findIntersection(wallBounds);
+
+                // Выталкиваем по наименьшей оси
+                if (intersection && intersection->size.x < intersection->size.y) {
+                    // Выталкиваем по X
+                    if (hero->getX() < wall.getPosition().x + wall.getSize().x / 2) {
+                        hero->set_pos(wall.getPosition().x - 15.0f, hero->getY());
+                    } else {
+                        hero->set_pos(wall.getPosition().x + wall.getSize().x + 15.0f, hero->getY());
+                    }
+                } else {
+                    // Выталкиваем по Y
+                    if (hero->getY() < wall.getPosition().y + wall.getSize().y / 2) {
+                        hero->set_pos(hero->getX(), wall.getPosition().y - 15.0f);
+                    } else {
+                        hero->set_pos(hero->getX(), wall.getPosition().y + wall.getSize().y + 15.0f);
+                    }
+                }
+            }
+        }
 
         if (hero->getX() < 20.0f) hero->set_pos(20.0f, hero->getY());
         if (hero->getX() > WINDOW_WIDTH - 20.0f) hero->set_pos(WINDOW_WIDTH - 20.0f, hero->getY());
@@ -417,9 +544,32 @@ public:
         hp_line.setPosition(hpPos);
         heroView.setPosition(sf::Vector2f(hero->getX(), hero->getY()));
 
-        // Движение врагов
+        // проверяем на то что бы враги не тыкались мордой в стену 
         for (int i = 0; i < enemies.size(); i++) {
+            // Сохраняем старую позицию
+            float oldX = enemies[i]->getX();
+            float oldY = enemies[i]->getY();
+            
             enemies[i]->trace(hero->getX(), hero->getY(), dt);
+            
+            // Проверка столкновений со стенами
+            bool collidesWithWall = false;
+            for (auto& wall : walls) {
+                sf::FloatRect enemyBounds(
+                    sf::Vector2f(enemies[i]->getX() - 15.0f, enemies[i]->getY() - 15.0f), 
+                    sf::Vector2f(30.0f, 30.0f)
+                );
+                
+                if (wall.getGlobalBounds().findIntersection(enemyBounds)) {
+                    collidesWithWall = true;
+                }
+            }
+            
+            // Если есть столкновение, возвращаем на старую позицию
+            if (collidesWithWall) {
+                enemies[i]->set_pos(oldX, oldY);
+            }
+            
             enemyViews[i].setPosition(sf::Vector2f(enemies[i]->getX(), enemies[i]->getY()));
         }
 
@@ -427,7 +577,16 @@ public:
 
         // Оружие на карте
         weaponSpawnTimer += dt;
-        if (weaponSpawnTimer >= weaponSpawnDelay && groundWeapons.size() < 2) {
+
+        // Считаем только активное оружие на земле
+        int activeWeaponsCount = 0;
+        for (int i = 0; i < groundWeapons.size(); i++) {
+            if (groundWeapons[i].isActive() && groundWeapons[i].isOnGround()) {
+                activeWeaponsCount++;
+            }
+        }
+
+        if (weaponSpawnTimer >= weaponSpawnDelay && activeWeaponsCount < 2) {
             string type = (rand() % 2 == 0) ? "shotgun" : "sniper";
             float wx = rand() % 900 + 62;
             float wy = rand() % 650 + 59;
@@ -503,7 +662,9 @@ public:
         window->draw(hp_fon);
         window->draw(hp_line);
         healthPack->draw(window);
-
+        for (auto& wall : walls) {
+            window->draw(wall);
+        }
         for (auto& ev : enemyViews) window->draw(ev);
         for (auto& bullet : bullets) bullet.draw(window);
 
@@ -555,7 +716,5 @@ public:
 int main() {
     Game game;
     game.run();
-    return 0;
-}
     return 0;
 }
